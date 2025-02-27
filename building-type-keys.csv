@@ -1,0 +1,20 @@
+﻿id,sector,user-facing name,program-facing name
+1,res,Mobile Home,mobile_home
+2,res,Multi-family with 2-4 Units,multi-family_with_2_-_4_units
+3,res,Multi-family with 5+ Units,multi-family_with_5plus_units
+4,res,Single-family Attached,single-family_attached
+5,res,Single-family Detached,single-family_detached
+6,com,Full Service Restaurant,fullservicerestaurant
+7,com,Hospital,hospital
+8,com,Large Hotel,largehotel
+9,com,Large Office,largeoffice
+10,com,Medium Office,mediumoffice
+11,com,Outpatient,outpatient
+12,com,Primary School,primaryschool
+13,com,Quick Service Restaurant,quickservicerestaurant
+14,com,Retail Standalone,retailstandalone
+15,com,Retail Stripmall,retailstripmall
+16,com,Secondary School,secondaryschool
+17,com,Small Hotel,smallhotel
+18,com,Small Office,smalloffice
+19,com,Warehouse,warehouse
