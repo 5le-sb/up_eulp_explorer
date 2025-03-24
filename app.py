@@ -234,7 +234,10 @@ with st.form("my_form"):
 
     # upgrade selection
     selected_result = container.selectbox("Select result type:",
-        ['Energy use and savings','Energy intensity','Load profile shapes'])
+        ['Energy use and savings','Energy intensity','Load profile shapes'],
+        help=''':blue[Energy use and savings:] total energy use and savings (if upgrade is selected) (kwh) by end use and fuel type.  
+        :blue[Energy intensity:] energy use per square foot (kwh/sqft) by end use and fuel type.  
+        :blue[Load profile shapes:] energy use expressed as a fraction of total annual energy use for each end use and fuel type.''')
 
     # Submit button
     submitted = st.form_submit_button("Submit")
