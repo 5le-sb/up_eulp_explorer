@@ -78,12 +78,6 @@ def fetch_single_oedi_file(county, building_type, upgrade):
         agg_dict.update({'models_used': 'mean'})
         df = df.resample('h').agg(agg_dict) 
         
-        # drop savings columns for EUSS 1 and 2
-        # TODO: confirm if we want savings columns in the final data
-        # if eulp_upgrade != '00': 
-        #     savings_cols = df.filter(regex='.*savings.*', axis=1).columns
-        #     df.drop(savings_cols, axis=1, inplace=True)
-        
         # identify total represented column from the string
         total_represented_col = df[total_represented_str]
         models_used_col = df['models_used']
@@ -92,9 +86,8 @@ def fetch_single_oedi_file(county, building_type, upgrade):
         df = df.filter(regex='kwh')
 
         # drop district columns for com
-        # TODO: confirm if we want district heating/cooling in the data
         # df = df.drop(columns=df.filter(like='district').columns)
-
+        
         # rename the remaining columns to only include fuel type and end use
         # df.columns = df.columns.str.extract(r'out\.(\w+\.\w+)', expand=False)
         # Convert the Index to a Series
@@ -122,11 +115,30 @@ def fetch_single_oedi_file(county, building_type, upgrade):
                  f'\n This county-building-upgrade combination may not exist in the data lake.')
 
 
-def combine_files(to_combine): 
+def combine_files(to_combine, selected_result): 
     """
     Sums the dataframes in the to_combine list.
     """
     finaldf = reduce(lambda x,y: x.add(y,fill_value=0),to_combine)
+
+    if selected_result == 'Energy use and savings':
+        pass
+    elif selected_result == 'Energy intensity':
+        # drop savings columns 
+        savings_cols = finaldf.filter(regex='.*savings.*', axis=1).columns
+        finaldf.drop(savings_cols, axis=1, inplace=True)
+        # divide by floor area represented
+        finaldf.iloc[:, 2:] = finaldf.iloc[:, 2:].div(finaldf['floor_area_represented'], axis=0)
+        # add column ending
+        finaldf.columns = finaldf.columns[:2].tolist() + [col + '.persqft' for col in finaldf.columns[2:]]
+    elif selected_result == 'Load profile shapes':
+        # drop savings columns 
+        savings_cols = finaldf.filter(regex='.*savings.*', axis=1).columns
+        finaldf.drop(savings_cols, axis=1, inplace=True)
+        # divide by floor area represented
+        finaldf.iloc[:, 2:] = finaldf.iloc[:, 2:].div(finaldf.iloc[:,2:].sum(axis=0), axis=1)
+        # add column ending
+        finaldf.columns = finaldf.columns[:2].tolist() + [col + '.lps' for col in finaldf.columns[2:]]
 
     return finaldf
 
@@ -216,9 +228,16 @@ with st.form("my_form"):
             btypelist)
         
     # upgrade selection
-    selected_upgrade = st.selectbox(
+    selected_upgrade = container.selectbox(
     'Select an upgrade package:',
     upgradelist)
+
+    # upgrade selection
+    selected_result = container.selectbox("Select result type:",
+        ['Energy use and savings','Energy intensity','Load profile shapes'],
+        help=''':blue[Energy use and savings:] total energy use and savings (if upgrade is selected) (kwh) by end use and fuel type.  
+        :blue[Energy intensity:] energy use per square foot (kwh/sqft) by end use and fuel type.  
+        :blue[Load profile shapes:] energy use expressed as a fraction of total annual energy use for each end use and fuel type.''')
 
     # Submit button
     submitted = st.form_submit_button("Submit")
@@ -228,7 +247,7 @@ with st.form("my_form"):
             for building in selected_buildings:
                 fetch_single_oedi_file(county, building, selected_upgrade)
 
-        finaldf = combine_files(to_combine)
+        finaldf = combine_files(to_combine, selected_result)
         st.write("Total Models: " + str(int(finaldf.models_used.iloc[0])))
         if finaldf not in st.session_state:
             st.session_state.finaldf = finaldf
@@ -247,12 +266,15 @@ if submitted:
 
     fragment_function()
 
-st.header("Daily Average Load Profile")
 if submitted:
-    @st.fragment
-    def vizfrag():
-        seasonchoice = st.selectbox(label="Season", options = ['summer','winter'])
-        daytypechoice = st.selectbox(label="Day Type", options = ['weekday','weekend'])
-        fueltypechoice = st.selectbox(label="Fuel Type", options = ['electricity','natural gas','other fuel','district cooling','district heating','all'])
-        visualize_df(st.session_state.finaldf, seasonchoice, daytypechoice, fueltypechoice)
-    vizfrag()
+   if selected_result == 'Energy use and savings':
+        st.header("Daily Average Load Profile")
+        @st.fragment
+        def vizfrag():
+            seasonchoice = st.selectbox(label="Season", options = ['summer','winter'])
+            daytypechoice = st.selectbox(label="Day Type", options = ['weekday','weekend'])
+            fueltypechoice = st.selectbox(label="Fuel Type", options = ['electricity','natural gas','other fuel','district cooling','district heating','all'])
+            visualize_df(st.session_state.finaldf, seasonchoice, daytypechoice, fueltypechoice)
+        vizfrag()
+
+    
