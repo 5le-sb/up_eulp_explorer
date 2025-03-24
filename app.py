@@ -78,12 +78,6 @@ def fetch_single_oedi_file(county, building_type, upgrade):
         agg_dict.update({'models_used': 'mean'})
         df = df.resample('h').agg(agg_dict) 
         
-        # drop savings columns for EUSS 1 and 2
-        # TODO: confirm if we want savings columns in the final data
-        # if eulp_upgrade != '00': 
-        #     savings_cols = df.filter(regex='.*savings.*', axis=1).columns
-        #     df.drop(savings_cols, axis=1, inplace=True)
-        
         # identify total represented column from the string
         total_represented_col = df[total_represented_str]
         models_used_col = df['models_used']
@@ -130,11 +124,21 @@ def combine_files(to_combine, selected_result):
     if selected_result == 'Energy use and savings':
         pass
     elif selected_result == 'Energy intensity':
-        finaldf.iloc[:, 3:] = finaldf.iloc[:, 3:].div(finaldf['floor_area_represented'], axis=0)
-        finaldf.columns = finaldf.columns[:3].tolist() + [col + '.persqft' for col in finaldf.columns[3:]]
+        # drop savings columns 
+        savings_cols = finaldf.filter(regex='.*savings.*', axis=1).columns
+        finaldf.drop(savings_cols, axis=1, inplace=True)
+        # divide by floor area represented
+        finaldf.iloc[:, 2:] = finaldf.iloc[:, 2:].div(finaldf['floor_area_represented'], axis=0)
+        # add column ending
+        finaldf.columns = finaldf.columns[:2].tolist() + [col + '.persqft' for col in finaldf.columns[2:]]
     elif selected_result == 'Load profile shapes':
-        finaldf.iloc[:, 3:] = finaldf.iloc[:, 3:].div(finaldf.iloc[:,3:].sum(axis=0), axis=1)
-        finaldf.columns = finaldf.columns[:3].tolist() + [col + '.lps' for col in finaldf.columns[3:]]
+        # drop savings columns 
+        savings_cols = finaldf.filter(regex='.*savings.*', axis=1).columns
+        finaldf.drop(savings_cols, axis=1, inplace=True)
+        # divide by floor area represented
+        finaldf.iloc[:, 2:] = finaldf.iloc[:, 2:].div(finaldf.iloc[:,2:].sum(axis=0), axis=1)
+        # add column ending
+        finaldf.columns = finaldf.columns[:2].tolist() + [col + '.lps' for col in finaldf.columns[2:]]
 
     return finaldf
 
