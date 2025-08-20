@@ -135,7 +135,7 @@ def combine_files(to_combine, selected_result):
         # drop savings columns 
         savings_cols = finaldf.filter(regex='.*savings.*', axis=1).columns
         finaldf.drop(savings_cols, axis=1, inplace=True)
-        # divide by floor area represented
+        # divide by sum of each column
         finaldf.iloc[:, 2:] = finaldf.iloc[:, 2:].div(finaldf.iloc[:,2:].sum(axis=0), axis=1)
         # add column ending
         finaldf.columns = finaldf.columns[:2].tolist() + [col + '.lps' for col in finaldf.columns[2:]]
